@@ -23,7 +23,6 @@ HEADERS = {
 }
 
 def fetch_roster():
-    """Fetch all inmates currently in custody"""
     print("Fetching roster...")
     resp = requests.get(f"{BASE_URL}/custody/GetInCustody", headers=HEADERS, timeout=30)
     resp.raise_for_status()
@@ -32,7 +31,6 @@ def fetch_roster():
     return inmates
 
 def fetch_charges(name_id):
-    """Fetch charges for a specific inmate"""
     try:
         resp = requests.get(
             f"{BASE_URL}/arrest/GetArrestsByNameId",
@@ -47,13 +45,9 @@ def fetch_charges(name_id):
     return []
 
 def fetch_mugshot(name_id):
-    """Fetch mugshot as base64 and save to file"""
     mugshot_path = f"{MUGSHOT_DIR}/{name_id}.jpg"
-    
-    # Skip if already downloaded
     if os.path.exists(mugshot_path):
         return f"mugshots/{name_id}.jpg"
-    
     try:
         resp = requests.get(
             f"{BASE_URL}/custody/GetMugshotByNameId",
@@ -62,7 +56,6 @@ def fetch_mugshot(name_id):
             timeout=15
         )
         if resp.status_code == 200 and resp.content:
-            # Response is base64 encoded image data
             content = resp.text.strip().strip('"')
             if content and len(content) > 100:
                 img_data = base64.b64decode(content)
@@ -75,7 +68,6 @@ def fetch_mugshot(name_id):
     return None
 
 def process_charges(raw_charges):
-    """Clean and format charge data"""
     charges = []
     for arrest in raw_charges:
         charge_list = arrest.get('charges', [arrest]) if 'charges' in arrest else [arrest]
@@ -93,7 +85,6 @@ def main():
     os.makedirs(DATA_DIR, exist_ok=True)
     os.makedirs(MUGSHOT_DIR, exist_ok=True)
 
-    # Load existing data to avoid re-fetching mugshots
     existing_data = {}
     roster_file = f"{DATA_DIR}/roster.json"
     if os.path.exists(roster_file):
@@ -102,7 +93,6 @@ def main():
             for inmate in existing:
                 existing_data[inmate['nameId']] = inmate
 
-    # Fetch fresh roster
     inmates = fetch_roster()
     roster = []
 
@@ -113,16 +103,14 @@ def main():
 
         print(f"[{i+1}/{len(inmates)}] {inmate.get('firstName')} {inmate.get('lastName')} ({name_id})")
 
-        # Get charges
         raw_charges = fetch_charges(name_id)
         charges = process_charges(raw_charges) if raw_charges else []
 
-        # Get mugshot — reuse if we already have it
         if name_id in existing_data and existing_data[name_id].get('mugshot_url'):
             mugshot_url = existing_data[name_id]['mugshot_url']
         else:
             mugshot_url = fetch_mugshot(name_id)
-            time.sleep(0.3)  # Be polite to the server
+            time.sleep(0.3)
 
         roster.append({
             'nameId':        name_id,
@@ -142,19 +130,16 @@ def main():
             'charges':       charges,
         })
 
-    # Save roster
     with open(roster_file, 'w') as f:
         json.dump(roster, f, indent=2)
 
     print(f"\n✅ Saved {len(roster)} inmates to {roster_file}")
-    print(f"📸 Mugshots saved to {MUGSHOT_DIR}/")
 
-    # Save metadata
     with open(f"{DATA_DIR}/meta.json", 'w') as f:
         json.dump({
-            'total':     len(roster),
-            'updated':   datetime.utcnow().isoformat() + 'Z',
-            'source':    'Pasco County Corrections',
+            'total':   len(roster),
+            'updated': datetime.utcnow().isoformat() + 'Z',
+            'source':  'Pasco County Corrections',
         }, f, indent=2)
 
 if __name__ == '__main__':
