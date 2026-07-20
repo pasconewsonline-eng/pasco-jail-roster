@@ -1,12 +1,32 @@
-‎.github/workflows/fetch-roster.yml‎
-+1
--2
-Lines changed: 1 addition & 2 deletions
-Original file line number	Diff line number	Diff line change
-@@ -28,5 +28,4 @@ jobs:
+‎name: Fetch Pasco Jail Roster
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  fetch-roster:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Fetch jail roster
+        run: python fetch_roster.py
+
+      - name: Commit and push data
+        run: |
           git config user.name "Pasco News Bot"
           git config user.email "bot@pascocountynews.com"
           git add data/
           git diff --staged --quiet || git commit -m "Update jail roster $(date -u '+%Y-%m-%d %H:%M UTC')"
           git push
-          git diff --staged
