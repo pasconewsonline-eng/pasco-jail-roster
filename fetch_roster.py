@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-"""
-Pasco Jail Roster Fetcher
-Pulls inmate data, charges, and mugshots from Pasco Corrections API
-Saves to data/roster.json for WordPress to display
-"""
-
 import requests
 import json
 import os
@@ -133,7 +127,7 @@ def main():
     with open(roster_file, 'w') as f:
         json.dump(roster, f, indent=2)
 
-    print(f"\n✅ Saved {len(roster)} inmates to {roster_file}")
+    print(f"\nSaved {len(roster)} inmates to {roster_file}")
 
     with open(f"{DATA_DIR}/meta.json", 'w') as f:
         json.dump({
@@ -144,4 +138,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    
